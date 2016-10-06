@@ -1,0 +1,19 @@
+{
+  "name": "taskmanager",
+  "version": "0.1.0",
+  "description": "A tool to help your daily tasks time management",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Márcio Chaves",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "bootstrap": "^3.3.7",
+    "express": "^4.14.0",
+    "express-handlebars": "^3.0.0",
+    "jquery": "^3.1.1",
+    "nedb": "^1.8.0"
+  }
+}
