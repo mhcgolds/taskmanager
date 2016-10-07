@@ -1,4 +1,12 @@
 
+{{#if msg}}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="alert alert-success alert-dismissable">{{msg.text}}</div>
+    </div>
+</div>
+{{/if}}
+
 <div class="row">
     {{#each tasks}}
     <div class="col-lg-3 col-md-6">
