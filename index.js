@@ -4,8 +4,13 @@ var express = require('express'),
     session = require('express-session'),
     app = express(),
     bodyParser = require('body-parser'),
+    fs = require('fs'),
+    path = require('path'),
     Datastore = require('nedb'),
-    db = new Datastore({ filename: __dirname + "/db/tasks.json", autoload: true });
+    db = {};
+  
+db.tasks = new Datastore({ filename: __dirname + "/db/tasks.json", autoload: true });
+db.projects = new Datastore({ filename: __dirname + "/db/projects.json", autoload: true });
 	
 app.engine('handlebars', exphbs({defaultLayout: 'main'}));
 app.set('view engine', 'handlebars');
@@ -25,81 +30,97 @@ app.use("/theme", express.static('./theme/'));
 app.use("/js", express.static('./assets/js/'));
 
 app.get('/', function (req, res) {
-  db.find({}).exec(function(err, docs) {
-    var activeTask = null;
-
-    docs.forEach(function(doc) {
-      var status = "",
-          icon = "",
-          typeIcon = "";
-
-      switch (Number(doc.status)) {
-        case 1: 
-          status = "primary"; 
-          icon = "stop-circle";
-          break;
-        case 2: 
-          status = "green";
-          icon = "play-circle"; 
-          activeTask = doc;
-          break;
-        case 3: 
-          status = "yellow";
-          icon = "pause-circle"; 
-          break;
-        case 4: 
-          status = "green";
-          icon = "check-circle"; 
-          break;
-      }
-
-      doc["status-class"] = status;
-      doc["status-icon"] = icon;
-
-      switch (Number(doc.type)) {
-        case 1: typeIcon = "asterisk"; break;
-        case 2: typeIcon = "wrench"; break;
-        case 3: typeIcon = "bug"; break;
-      }
-
-      doc["type-icon"] = typeIcon;
+  if (!req.session.projects) {
+    db.projects.find({}, function(err, projects) {
+      req.session.projects = projects;
+      res.redirect("/");
     });
 
-    if (activeTask) {
-      var totalTime = 0,
-          lastTime = null;
+    return;
+  }
 
-      activeTask.history.forEach(function(history) {
-        if (lastTime && history.status != "2") {
-          totalTime+= history.time.getTime() - lastTime.getTime();
+  var currentProject = getDefaultProject(req),
+      docs = [],
+      activeTask = null;
+
+  if (currentProject) {
+    db.tasks.find({ "project-id": currentProject._id }).exec(function(err, docs) {
+      docs.forEach(function(doc) {
+        var status = "",
+            icon = "",
+            typeIcon = "";
+
+        switch (Number(doc.status)) {
+          case 1: 
+            status = "primary"; 
+            icon = "stop-circle";
+            break;
+          case 2: 
+            status = "green";
+            icon = "play-circle"; 
+            activeTask = doc;
+            break;
+          case 3: 
+            status = "yellow";
+            icon = "pause-circle"; 
+            break;
+          case 4: 
+            status = "green";
+            icon = "check-circle"; 
+            break;
         }
 
-        lastTime = history.time;
+        doc["status-class"] = status;
+        doc["status-icon"] = icon;
+
+        switch (Number(doc.type)) {
+          case 1: typeIcon = "asterisk"; break;
+          case 2: typeIcon = "wrench"; break;
+          case 3: typeIcon = "bug"; break;
+        }
+
+        doc["type-icon"] = typeIcon;
       });
 
-      totalTime+= (new Date()).getTime() - lastTime.getTime();
+      if (activeTask) {
+        var totalTime = 0,
+            lastTime = null;
 
-      var t1 = Math.floor(totalTime / 60000),
-          min = activeTask.estminutes;
+        activeTask.history.forEach(function(history) {
+          if (lastTime && history.status != "2") {
+            totalTime+= history.time.getTime() - lastTime.getTime();
+          }
 
-      activeTask.estminutes = 60 - (t1 % activeTask.estminutes);
-      activeTask.esthours = (Math.floor(t1 / min) > 0 ? (activeTask.esthours - Math.floor(t1 / min)) : 0);
-    }
-    
-    docs = docs.filter(function(doc) {
-      return doc.status != "2";
+          lastTime = history.time;
+        });
+
+        totalTime+= (new Date()).getTime() - lastTime.getTime();
+
+        var t1 = Math.floor(totalTime / 60000),
+            min = activeTask.estminutes;
+
+        activeTask.estminutes = 60 - (t1 % activeTask.estminutes);
+        activeTask.esthours = (Math.floor(t1 / min) > 0 ? (activeTask.esthours - Math.floor(t1 / min)) : 0);
+      }
+      
+      docs = docs.filter(function(doc) {
+        return doc.status != "2";
+      });
+
+      res.render('home', getDefaultViewData({ title: "Teste", tasks: docs, msg: getSessionMsg(req), activeTask: activeTask }, req));
     });
-
-    res.render('home', { title: "Teste", tasks: docs, msg: getSessionMsg(req), activeTask: activeTask });
-  });
+  }
+  else {
+    res.render('home', getDefaultViewData({ title: "Teste", tasks: [], msg: getSessionMsg(req), activeTask: null }, req));
+  }
 });
 
 app.get('/task/add', function (req, res) {
-  res.render('task-form', { title: "Add Task", task: { id: 0 }, detail: false });
+  res.render('task-form', getDefaultViewData({ title: "Add Task", task: { id: 0 }, detail: false }, req));
 });
 
 app.get('/task/details/:id', function (req, res) {
-  db.find({ "_id": req.params.id }, function(err, task) {
+  db.tasks.find({ "_id": req.params.id }, function(err, task) {
     task = task[0];
     task.finished = false;
     task.stopped = false;
@@ -118,7 +139,7 @@ app.get('/task/details/:id', function (req, res) {
       });
     }
 
-    res.render('task-form', { title: "Task Details", task: task, detail: true });
+    res.render('task-form', getDefaultViewData({ title: "Task Details", task: task, detail: true }, req));
   });
 });
 
@@ -126,7 +147,7 @@ app.get('/task/action/:id/:action', function (req, res) {
   var action = req.params.action,
       id = req.params.id;
 
-  db.find({ "_id": id }, function(err, doc) {
+  db.tasks.find({ "_id": id }, function(err, doc) {
     doc = doc[0];
 
     var msg = "Task " + doc.code + " is now ";
@@ -152,8 +173,8 @@ app.get('/task/action/:id/:action', function (req, res) {
       return;
     }
 
-    db.update({ "_id": id }, { $set: { status: doc.status } });
-    db.update({ "_id": id }, { $push: { history: {status: doc.status, time: new Date() }}});
+    db.tasks.update({ "_id": id }, { $set: { status: doc.status } });
+    db.tasks.update({ "_id": id }, { $push: { history: {status: doc.status, time: new Date() }}});
 
     setSessionMsg(req, msg, 1);
 
@@ -161,12 +182,44 @@ app.get('/task/action/:id/:action', function (req, res) {
   });
 });
 
+app.get('/project/', function(req, res) {
+  db.projects.find({}, function(err, projects) {
+    res.render('project-home', getDefaultViewData({ title: "Projects", projects: projects }, req));
+  });
+});
+
+app.get('/project/new/', function(req, res) {
+    res.render('project-form', getDefaultViewData({ title: "New Project", project: {} }, req));
+});
+
+app.get('/project/select/:id', function(req, res) {
+    var id = req.params.id;
+
+    req.session.projects.forEach(function(project) {
+      project.default = (project._id == id);
+    });
+
+    db.projects.update({ }, { $set: { default: false }}, function() {
+      db.projects.update({ _id: id }, { $set: { default: true }}, function() {
+        res.redirect("/");
+      });
+    });
+});
+
 app.post('/task/save', function (req, res) {
   var task = req.body;
   task.history = [];
 
-  db.insert(task);
-  res.render('home', { title: "Teste", message: "Task Saved!" });
+  db.tasks.insert(task);
+  res.render('home', getDefaultViewData({ title: "Teste", message: "Task Saved!" }, req));
+});
+
+app.post('/project/save', function (req, res) {
+  var project = req.body;
+  project.default = false;
+
+  db.projects.insert(project);
+  res.render('home', getDefaultViewData({ title: "Teste", message: "Project Saved!" }, req));
 });
 
 app.listen(3000, function () {
@@ -193,3 +246,34 @@ var getSessionMsg = function(req) {
 
   return msg;
 };
+
+var getDefaultViewData = function(viewData, req) {
+  viewData.projects = [];
+  viewData["default-project"] = "No Project Selected";
+  
+  if (req.session.projects) {
+    req.session.projects.forEach(function(p) {
+      if (p.default) {
+        viewData["default-project"] = p.description;
+      }
+
+      viewData.projects.push(p);
+    });
+  }
+
+  return viewData;
+}
+
+var getDefaultProject = function(req) {
+  if (req.session.projects) {
+    var projects = req.session.projects.filter(function(p) {
+      return p.default;
+    });
+
+    if (projects.length == 1) {
+      return projects[0];
+    }
+  }
+
+  return null;
+}

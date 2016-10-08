@@ -22,6 +22,16 @@
             </div>
             <ul class="nav navbar-right top-nav">
                 <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-file-o"></i> {{default-project}}<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        {{#each projects}}
+                        <li>
+                            <a href="/project/select/{{_id}}">{{description}}</a>
+                        </li>
+                        {{/each}}
+                    </ul>
+                </li>
+                <li class="dropdown">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-envelope"></i> <b class="caret"></b></a>
                     <ul class="dropdown-menu message-dropdown">
                         <li class="message-preview">
@@ -127,6 +137,9 @@
                     </li>
                     <li>
                         <a href="/task/add"><i class="fa fa-fw fa-plus"></i> Add Task</a>
+                    </li>
+                    <li>
+                        <a href="/project/"><i class="fa fa-fw fa-file-o"></i> Projects</a>
                     </li>
                 </ul>
             </div>

@@ -1,0 +1,27 @@
+
+
+<div class="row">
+    <div class="col-lg-6 col-md-12">
+        <a href="/project/new">
+            <i class="fa fa-asterisk"></i>
+            Create Project
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 col-md-12">
+        <table class="table table-projects">
+            <tr>
+                <th>Name</th>
+            </tr>
+            {{#each projects}}
+            <tr>
+                <td>
+                    <a href="/project/details/{{_id}}">{{description}}</a>
+                </td>
+            </tr>
+            {{/each}}
+        </table>
+    </div>
+</div>
