@@ -8,6 +8,37 @@
 {{/if}}
 
 <div class="row">
+    {{#if activeTask}}
+    <div class="col-lg-3 col-md-6">
+        <div class="panel panel-{{activeTask.status-class}}">
+            <div class="panel-heading">
+                <div class="row">
+                    <div class="col-xs-3">
+                        <i class="fa fa-{{activeTask.status-icon}} fa-5x"></i>
+                    </div>
+                    <div class="col-xs-9 text-right">
+                        <div class="huge">{{activeTask.code}}</div>
+                        <div>{{activeTask.description}}</div>
+                        <div>Remaining time: <span id="remaining-time">{{activeTask.esthours}}:{{activeTask.estminutes}}</span></div>
+                    </div>
+                </div>
+            </div>
+            <a href="/task/details/{{activeTask._id}}">
+                <div class="panel-footer">
+                    <span class="pull-left">
+                        <i class="fa fa-{{activeTask.type-icon}}"></i>
+                        View Details
+                    </span>
+                    <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+                    <div class="clearfix"></div>
+                </div>
+            </a>
+        </div>
+    </div>
+    {{/if}}
+</div>
+
+<div class="row">
     {{#each tasks}}
     <div class="col-lg-3 col-md-6">
         <div class="panel panel-{{status-class}}">
@@ -19,12 +50,16 @@
                     <div class="col-xs-9 text-right">
                         <div class="huge">{{code}}</div>
                         <div>{{description}}</div>
+                        <div>Estimated time: <span id="remaining-time">{{esthours}}:{{estminutes}}</span></div>
                     </div>
                 </div>
             </div>
             <a href="/task/details/{{_id}}">
                 <div class="panel-footer">
-                    <span class="pull-left">View Details</span>
+                    <span class="pull-left">
+                        <i class="fa fa-{{type-icon}}"></i>
+                        View Details
+                    </span>
                     <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
                     <div class="clearfix"></div>
                 </div>

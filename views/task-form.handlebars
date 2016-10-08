@@ -9,24 +9,67 @@
 <div class="row">
     <div class="col-lg-6">
         <form action="/task/save" method="post">
-            <div class="form-group">
-                <label>Code</label>
-                <input name="code" class="form-control" value="{{task.code}}"{{#if detail}} readonly="readonly"{{/if}}>
+            <div class="row">
+                <div class="col-lg-2">
+                    <div class="form-group">
+                        <label>Code</label>
+                        <input name="code" class="form-control" value="{{task.code}}"{{#if detail}} readonly="readonly"{{/if}}>
+                    </div>
+                </div>
+                <div class="col-lg-10">
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input name="description" class="form-control" value="{{task.description}}"{{#if detail}} readonly="readonly"{{/if}}>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Description</label>
-                <input name="description" class="form-control" value="{{task.description}}"{{#if detail}} readonly="readonly"{{/if}}>
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="form-group">
+                        <label>Status</label> 
+                        <select name="status" class="form-control"{{#if detail}} readonly="readonly"{{/if}}>
+                            <option value="1">Stopped</option>
+                            <option value="2">Working</option>
+                            <option value="3">Paused</option>
+                            <option value="4">Finished</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="form-group">
+                        <label>Type</label> 
+                        <select name="type" class="form-control"{{#if detail}} readonly="readonly"{{/if}}>
+                            <option value="1">New feature</option>
+                            <option value="2">Maintenance</option>
+                            <option value="3">Bug</option>
+                        </select>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Status</label> 
-                <select name="status" class="form-control"{{#if detail}} readonly="readonly"{{/if}}>
-                    <option value="1">Stopped</option>
-                    <option value="2">Working</option>
-                    <option value="3">Paused</option>
-                    <option value="4">Finished</option>
-                </select>
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="form-group">
+                        <label>Tags</label>
+                        <input name="tags" class="form-control" value="{{task.tags}}"{{#if detail}} readonly="readonly"{{/if}}>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="form-group">
+                        <label>Conclusion estimated time</label>
+                        <div class="row">
+                            <div class="col-lg-4">
+                                <input name="esthours" type="number" class="form-control" value="{{task.esthours}}"{{#if detail}} readonly="readonly"{{/if}}> hours
+                            </div>
+                            <div class="col-lg-4">
+                                <input name="estminutes" type="number" class="form-control" value="{{task.estminutes}}"{{#if detail}} readonly="readonly"{{/if}}> minutes
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
+
             {{#if detail}}
+
             <div class="form-group">
                 <label>Working Actions</label> 
                 {{#if task.finished}}
@@ -53,7 +96,26 @@
                     {{/if}}
                 {{/if}}
             </div>
+
+                {{#if task.history}}
+
+                    <table class="table">
+                        <tr>
+                            <th>Time</th>
+                            <th>Action</th>
+                        </tr>
+                        {{#each task.history}}
+                        <tr>
+                            <td>{{time}}</td>
+                            <td>{{status}}</td>
+                        </tr>
+                        {{/each}}
+                    </table>
+
+                {{/if}}
+
             {{/if}}
+
             <div class="form-group">
                 <a href="/" class="btn btn-danger">Cancel</a>
                 {{#if detail}}

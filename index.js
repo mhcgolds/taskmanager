@@ -22,12 +22,16 @@ app.use(session({
 }));
 
 app.use("/theme", express.static('./theme/'));
+app.use("/js", express.static('./assets/js/'));
 
 app.get('/', function (req, res) {
   db.find({}).exec(function(err, docs) {
+    var activeTask = null;
+
     docs.forEach(function(doc) {
       var status = "",
-          icon = "";
+          icon = "",
+          typeIcon = "";
 
       switch (Number(doc.status)) {
         case 1: 
@@ -37,6 +41,7 @@ app.get('/', function (req, res) {
         case 2: 
           status = "green";
           icon = "play-circle"; 
+          activeTask = doc;
           break;
         case 3: 
           status = "yellow";
@@ -50,9 +55,42 @@ app.get('/', function (req, res) {
 
       doc["status-class"] = status;
       doc["status-icon"] = icon;
+
+      switch (Number(doc.type)) {
+        case 1: typeIcon = "asterisk"; break;
+        case 2: typeIcon = "wrench"; break;
+        case 3: typeIcon = "bug"; break;
+      }
+
+      doc["type-icon"] = typeIcon;
     });
 
-    res.render('home', { title: "Teste", tasks: docs, msg: getSessionMsg(req) });
+    if (activeTask) {
+      var totalTime = 0,
+          lastTime = null;
+
+      activeTask.history.forEach(function(history) {
+        if (lastTime && history.status != "2") {
+          totalTime+= history.time.getTime() - lastTime.getTime();
+        }
+
+        lastTime = history.time;
+      });
+
+      totalTime+= (new Date()).getTime() - lastTime.getTime();
+
+      var t1 = Math.floor(totalTime / 60000),
+          min = activeTask.estminutes;
+
+      activeTask.estminutes = 60 - (t1 % activeTask.estminutes);
+      activeTask.esthours = (Math.floor(t1 / min) > 0 ? (activeTask.esthours - Math.floor(t1 / min)) : 0);
+    }
+    
+    docs = docs.filter(function(doc) {
+      return doc.status != "2";
+    });
+
+    res.render('home', { title: "Teste", tasks: docs, msg: getSessionMsg(req), activeTask: activeTask });
   });
 });
 
@@ -61,17 +99,26 @@ app.get('/task/add', function (req, res) {
 });
 
 app.get('/task/details/:id', function (req, res) {
-  db.find({ "_id": req.params.id }, function(err, doc) {
-    doc = doc[0];
-    doc.finished = false;
-    doc.stopped = false;
-    doc.playing = false;
+  db.find({ "_id": req.params.id }, function(err, task) {
+    task = task[0];
+    task.finished = false;
+    task.stopped = false;
+    task.playing = false;
 
-    if (doc.status == "1" || doc.status == "3") doc.stopped = true;
-    else if (doc.status == "2") doc.playing = true;
-    else if (doc.status == "4") doc.finished = true;
+    if (task.status == "1" || task.status == "3") task.stopped = true;
+    else if (task.status == "2") task.playing = true;
+    else if (task.status == "4") task.finished = true;
 
-    res.render('task-form', { title: "Task Details", task: doc, detail: true });
+    if (task.history.length == 0) {
+      task.history = null;
+    }
+    else {
+      task.history = task.history.sort(function(a, b) {
+        return a.time.getTime() < b.time.getTime();
+      });
+    }
+
+    res.render('task-form', { title: "Task Details", task: task, detail: true });
   });
 });
 
@@ -79,7 +126,7 @@ app.get('/task/action/:id/:action', function (req, res) {
   var action = req.params.action,
       id = req.params.id;
 
-  db.find({ "_id": req.params.id }, function(err, doc) {
+  db.find({ "_id": id }, function(err, doc) {
     doc = doc[0];
 
     var msg = "Task " + doc.code + " is now ";
@@ -105,7 +152,8 @@ app.get('/task/action/:id/:action', function (req, res) {
       return;
     }
 
-    db.update({ "_id": id }, doc);
+    db.update({ "_id": id }, { $set: { status: doc.status } });
+    db.update({ "_id": id }, { $push: { history: {status: doc.status, time: new Date() }}});
 
     setSessionMsg(req, msg, 1);
 
@@ -114,7 +162,10 @@ app.get('/task/action/:id/:action', function (req, res) {
 });
 
 app.post('/task/save', function (req, res) {
-  db.insert(req.body);
+  var task = req.body;
+  task.history = [];
+
+  db.insert(task);
   res.render('home', { title: "Teste", message: "Task Saved!" });
 });
 
