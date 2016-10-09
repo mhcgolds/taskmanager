@@ -4,8 +4,8 @@ var express = require('express'),
     session = require('express-session'),
     app = express(),
     bodyParser = require('body-parser'),
-    fs = require('fs'),
-    path = require('path'),
+    git = require("nodegit"),
+    repository = null,
     Datastore = require('nedb'),
     db = {};
   
@@ -27,6 +27,7 @@ app.use(session({
 }));
 
 app.use("/theme", express.static('./theme/'));
+app.use("/css", express.static('./assets/css/'));
 app.use("/js", express.static('./assets/js/'));
 
 app.get('/', function (req, res) {
@@ -139,7 +140,14 @@ app.get('/task/details/:id', function (req, res) {
       });
     }
 
-    res.render('task-form', getDefaultViewData({ title: "Task Details", task: task, detail: true }, req));
+    if (req.session.watching) {
+      db.projects.find({ _id: task["project-id"] }, function(err, project) {
+        res.render('task-form', getDefaultViewData({ title: "Task Details", task: task, detail: true, watching: project[0].location }, req));
+      });
+    }
+    else {
+      res.render('task-form', getDefaultViewData({ title: "Task Details", task: task, detail: true, watching: false }, req));
+    }
   });
 });
 
@@ -155,12 +163,18 @@ app.get('/task/action/:id/:action', function (req, res) {
     if (action == "play" && ["1", "3"].indexOf(doc.status) > -1) {
       doc.status = "2";
       msg+= "started";
+      req.session.watching = true;
     }
     else if ((action == "stop" || action == "pause") && doc.status == "2") {
       doc.status = (action == "stop" ? "1" : "3");
       msg+= (action == "stop" ? "stopped" : "paused");
+      req.session.watching = false;
     }
     else if (action == "finish" && doc.status != "4") {
+      if (doc.statue == "2") {
+        req.session.watching = false;
+      }
+
       doc.status = "4";
       msg+= "finished";
     }
@@ -173,12 +187,26 @@ app.get('/task/action/:id/:action', function (req, res) {
       return;
     }
 
-    db.tasks.update({ "_id": id }, { $set: { status: doc.status } });
-    db.tasks.update({ "_id": id }, { $push: { history: {status: doc.status, time: new Date() }}});
+    /*db.tasks.update({ "_id": id }, { $set: { status: doc.status } });
+    db.tasks.update({ "_id": id }, { $push: { history: {status: doc.status, time: new Date() }}});*/
 
     setSessionMsg(req, msg, 1);
 
-    res.redirect('/');
+    if (doc.status == "2") {
+      db.projects.find({ _id: doc["project-id"]}, function(err, projects) {
+        var project = projects[0];
+
+        git.Repository.open(project.location).then(function(repo) {
+          repository = repo;
+          res.redirect('/');
+        }, function(error) {
+          console.log("Repository error", project.location, error);
+        });
+      });
+    }
+    else {
+      res.redirect('/');
+    }
   });
 });
 
@@ -190,6 +218,18 @@ app.get('/project/', function(req, res) {
 
 app.get('/project/new/', function(req, res) {
     res.render('project-form', getDefaultViewData({ title: "New Project", project: {} }, req));
+});
+
+app.get('/project/details/:id', function(req, res) {
+  db.projects.find({ _id: req.params.id }, function(err, projects) {
+    if (!projects.length) {
+      setSessionMsg(req, "Project not found", 2);
+      res.redirect("/");
+    }
+    else {
+      res.render('project-form', getDefaultViewData({ title: "Edit Project '" + projects[0].description + "'", project: projects[0] }, req));
+    }
+  });
 });
 
 app.get('/project/select/:id', function(req, res) {
@@ -206,20 +246,41 @@ app.get('/project/select/:id', function(req, res) {
     });
 });
 
+app.get('/current-files', function(req, res) {
+  var fileList = [];
+
+  git.Status.foreach(repository, function(fileName, statusCode) {
+    fileList.push({
+      name: fileName,
+      code: statusCode
+    });
+  }).then(function() {
+    res.send(fileList);
+  });
+});
+
 app.post('/task/save', function (req, res) {
   var task = req.body;
   task.history = [];
 
   db.tasks.insert(task);
-  res.render('home', getDefaultViewData({ title: "Teste", message: "Task Saved!" }, req));
+  setSessionMsg(req, "Task Saved", 1);
+  res.redirect("/");
 });
 
-app.post('/project/save', function (req, res) {
+app.post('/project/save/:id?', function (req, res) {
   var project = req.body;
   project.default = false;
 
-  db.projects.insert(project);
-  res.render('home', getDefaultViewData({ title: "Teste", message: "Project Saved!" }, req));
+  if (!req.params.id) {
+    db.projects.insert(project);
+  }
+  else {
+    db.projects.update({ _id: req.params.id }, { $set: project });
+  }
+
+  setSessionMsg(req, "Project Updated", 1);
+  res.redirect("/");
 });
 
 app.listen(3000, function () {

@@ -1,0 +1,30 @@
+#file-list li.new {
+    color: #A3C856;
+}
+
+#file-list li.modified {
+    color: #DCC039;
+}
+
+#file-list li.deleted,
+#file-list li.conflicted {
+    color: #A80022;
+}
+
+#file-list li.ignored {
+    color: #ccc;
+    font-style: italic
+}
+
+#file-list li.conflicted {
+    font-weight: bold;
+}
+
+#file-list div.prefix {
+    display: inline-block;
+    width: 15%
+}
+
+#commit-message {
+    display: none
+}

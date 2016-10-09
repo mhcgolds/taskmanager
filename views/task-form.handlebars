@@ -127,12 +127,45 @@
             {{/if}}
 
             <div class="form-group">
-                <a href="/" class="btn btn-danger">Cancel</a>
+                <a href="/" class="btn">Cancel</a>
                 {{#if detail}}
                 {{else}}
-                <input type="submit" class="btn btn-default">
+                <input type="submit" class="btn btn-primary" value="Save">
                 {{/if}}
             </div>
         </form>
     </div>
+    {{#if watching}}
+    <div class="col-lg-6" id="file-list">
+        File changes on {{watching}}
+        <ul class="list-group">
+        </ul>
+        
+        <div class="form-group">
+            <label>Repository Actions</label>
+
+            <a href="/task/add-all/{{task._id}}" class="btn btn-default">
+                <i class="fa fa-asterisk"></i>
+                Add All
+            </a>
+            <button class="btn btn-default repo-action-commit">
+                <i class="fa fa-upload"></i>
+                Commit
+            </button>
+            <a href="/task/push/{{task._id}}" class="btn btn-default">
+                <i class="fa fa-cloud-upload"></i>
+                Push
+            </a>
+        </div>
+        
+        <div class="form-group well" id="commit-message">
+            <i class="fa fa-comment-o"></i>Commit Message:
+            <form action="/task/commit/{{task._id}}" method="post">
+                <textarea class="form-control"></textarea>
+                <button class="repo-action-commit-send btn btn-primary pull-right">Send</button>
+                <div class="clearfix"></div>
+            </form>
+        </div>
+    </div>
+    {{/if}}
 </div>
