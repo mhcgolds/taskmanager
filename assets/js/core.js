@@ -28,7 +28,8 @@ $(function() {
         var lastWatch = null,
             listInterval = window.setInterval(function() {
                 $.get("/current-files").success(function(data) {
-                    var $ul = $fileList.find("ul").empty();
+                    var $ul = $fileList.find("ul").empty(),
+                        fileChanges = 0;
 
                     data.forEach(function(file) {
                         var icon = "";
@@ -43,8 +44,18 @@ $(function() {
                             case 32768: fileClass = "conflicted"; prefix = "Conflicted"; break;
                         }
 
-                        $('<li class="' + fileClass + '"><div class="prefix">' + prefix + '</div>' + file.name + '</li>').addClass('list-group-item').appendTo($ul);
+                        if (file.code != 16384) { // don't show ignored
+                            fileChanges+= 1;
+                            $('<li class="' + fileClass + '"><div class="prefix">' + prefix + '</div>' + file.name + '</li>').addClass('list-group-item').appendTo($ul);
+                        }
                     });
+                    
+                    if (fileChanges == 0) {
+                        $ul.next().text("No file changes detected.");
+                    }
+                    else {
+                        $ul.next().text(fileChanges + " files changed.");
+                    }
                 });
             }, 1000);
     }

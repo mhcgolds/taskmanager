@@ -83,6 +83,10 @@ app.get('/', function (req, res) {
         doc["type-icon"] = typeIcon;
       });
 
+      docs = docs.filter(function(doc) {
+        return doc.status != "2";
+      });
+
       if (activeTask) {
         var totalTime = 0,
             lastTime = null;
@@ -97,18 +101,29 @@ app.get('/', function (req, res) {
 
         totalTime+= (new Date()).getTime() - lastTime.getTime();
 
-        var t1 = Math.floor(totalTime / 60000),
-            min = activeTask.estminutes;
+        activeTask.esthours = Number(activeTask.esthours);
+        activeTask.estminutes = Number(activeTask.estminutes);
 
-        activeTask.estminutes = 60 - (t1 % activeTask.estminutes);
-        activeTask.esthours = (Math.floor(t1 / min) > 0 ? (activeTask.esthours - Math.floor(t1 / min)) : 0);
+        // http://stackoverflow.com/a/39961449/1267304
+        var totalTimeInMins = Math.floor(totalTime / (1000 * 60)), // Get total minutes of work done
+            estTimeInMins = (activeTask.esthours * 60) + activeTask.estminutes, //converting esitmated time to minutes
+            resultTimeInMins = estTimeInMins - totalTimeInMins, //calculating result time
+            resultHours = Math.floor(resultTimeInMins / 60), //getting number of hours. Math.floor is rounding off to lower integer
+            resultMinutes = resultTimeInMins % 60; //calculating number of minutes. This is like getting the remainder.
+
+        if (resultMinutes.toString().length == 1) resultMinutes = "0" + resultMinutes;
+
+        activeTask.estminutes = resultMinutes;
+        activeTask.esthours = resultHours;
+
+        req.session.watching = true;
+        startWatch(activeTask["project-id"], function() {
+          res.render('home', getDefaultViewData({ title: "Teste", tasks: docs, msg: getSessionMsg(req), activeTask: activeTask }, req));  
+        });
       }
-      
-      docs = docs.filter(function(doc) {
-        return doc.status != "2";
-      });
-
-      res.render('home', getDefaultViewData({ title: "Teste", tasks: docs, msg: getSessionMsg(req), activeTask: activeTask }, req));
+      else {
+        res.render('home', getDefaultViewData({ title: "Teste", tasks: docs, msg: getSessionMsg(req), activeTask: activeTask }, req));
+      }
     });
   }
   else {
@@ -187,21 +202,18 @@ app.get('/task/action/:id/:action', function (req, res) {
       return;
     }
 
-    /*db.tasks.update({ "_id": id }, { $set: { status: doc.status } });
-    db.tasks.update({ "_id": id }, { $push: { history: {status: doc.status, time: new Date() }}});*/
+    db.tasks.update({ "_id": id }, { $set: { status: doc.status } });
+    db.tasks.update({ "_id": id }, { $push: { history: {status: doc.status, time: new Date() }}});
 
     setSessionMsg(req, msg, 1);
 
     if (doc.status == "2") {
-      db.projects.find({ _id: doc["project-id"]}, function(err, projects) {
-        var project = projects[0];
+      if (req.session.watching) {
+        // Stop current watch to start a new one
+      }
 
-        git.Repository.open(project.location).then(function(repo) {
-          repository = repo;
-          res.redirect('/');
-        }, function(error) {
-          console.log("Repository error", project.location, error);
-        });
+      startWatch(doc["project-id"], function() {
+        res.redirect('/');
       });
     }
     else {
@@ -337,4 +349,17 @@ var getDefaultProject = function(req) {
   }
 
   return null;
+}
+
+var startWatch = function(projectId, callback) {
+  db.projects.find({ _id: projectId}, function(err, projects) {
+    var project = projects[0];
+
+    git.Repository.open(project.location).then(function(repo) {
+      repository = repo;
+      callback();
+    }, function(error) {
+      console.log("Repository error", project.location, error);
+    });
+  });
 }

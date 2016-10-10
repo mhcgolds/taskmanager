@@ -140,9 +140,13 @@
         File changes on {{watching}}
         <ul class="list-group">
         </ul>
+
+        <p class="text-muted"></p>
         
         <div class="form-group">
             <label>Repository Actions</label>
+
+            {{#if task.finished}}
 
             <a href="/task/add-all/{{task._id}}" class="btn btn-default">
                 <i class="fa fa-asterisk"></i>
@@ -156,8 +160,13 @@
                 <i class="fa fa-cloud-upload"></i>
                 Push
             </a>
+            {{else}}
+            <i>Not actions available until task is <strong>finished</strong>.</i>
+            {{/if}}
         </div>
         
+        {{#if task.finished}}
+
         <div class="form-group well" id="commit-message">
             <i class="fa fa-comment-o"></i>Commit Message:
             <form action="/task/commit/{{task._id}}" method="post">
@@ -166,6 +175,8 @@
                 <div class="clearfix"></div>
             </form>
         </div>
+
+        {{/if}}
     </div>
     {{/if}}
 </div>
