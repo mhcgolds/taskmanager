@@ -60,6 +60,40 @@ $(function() {
             }, 1000);
     }
 
+    $historyTable = $(".history-table");
+
+    if ($historyTable.length > 0) {
+        $historyTable.find("tr:gt(0)").each(function() {
+            var $first = $(this).find("td:first"),
+                time = moment($first.data("timestamp")),
+                prevTime = null;
+
+            $first.text(time.format('DD/MM/YYYY HH:mm:ss'));
+
+            if ($(this).data("status") != "4") {
+                if ($(this).index() > 1) {
+                    prevTime = moment($(this).prev().find("td:first").data("timestamp"));
+                }
+                else {
+                    prevTime = moment();
+                }
+
+                var $last = $(this).find("td:last"),
+                    minutes = Math.abs(time.diff(prevTime, 'minutes')),
+                    label = minutes + " mins";
+
+                if (minutes > 59) {
+                    var hours = Math.floor(minutes % 60),
+                        minutes = Math.floor(minutes / 60);
+
+                    label = hours + " hrs " + minutes + " mins";
+                }
+
+                $last.text(label);
+            }
+        });
+    }
+
     $('body')
         .on('click', '.repo-action-commit', function() { // Task Commit Action
             $("#commit-message").toggle().find("textarea").val("#" + $('[name="code"]').val() + " ").focus();

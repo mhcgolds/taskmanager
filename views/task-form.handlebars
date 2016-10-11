@@ -109,15 +109,17 @@
 
                 {{#if task.history}}
 
-                    <table class="table">
+                    <table class="table history-table">
                         <tr>
                             <th>Time</th>
                             <th>Action</th>
+                            <th>Change</th>
                         </tr>
                         {{#each task.history}}
-                        <tr>
-                            <td>{{time}}</td>
+                        <tr data-status="{{status}}">
+                            <td data-timestamp="{{timestamp}}"></td>
                             <td>{{status}}</td>
+                            <td></td>
                         </tr>
                         {{/each}}
                     </table>
@@ -161,7 +163,7 @@
                 Push
             </a>
             {{else}}
-            <i>Not actions available until task is <strong>finished</strong>.</i>
+            <i>No actions available until task is <strong>finished</strong>.</i>
             {{/if}}
         </div>
         

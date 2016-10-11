@@ -28,6 +28,7 @@ app.use(session({
 
 app.use("/theme", express.static('./theme/'));
 app.use("/css", express.static('./assets/css/'));
+app.use("/js", express.static('./node_modules/moment/min/'));
 app.use("/js", express.static('./assets/js/'));
 
 app.get('/', function (req, res) {
@@ -154,6 +155,10 @@ app.get('/task/details/:id', function (req, res) {
         return a.time.getTime() < b.time.getTime();
       });
     }
+
+    task.history.forEach(function(item) {
+      item.timestamp = item.time.getTime();
+    });
 
     if (req.session.watching) {
       db.projects.find({ _id: task["project-id"] }, function(err, project) {
