@@ -27,7 +27,7 @@
                 <div class="col-lg-4">
                     <div class="form-group">
                         <label>Project</label> 
-                        <select name="project-id" class="form-control"{{#if detail}} readonly="readonly"{{/if}}>
+                        <select name="project-id" class="form-control"{{#if detail}} disabled="disabled"{{/if}}>
                             {{#each projects}}
                             <option value="{{_id}}">{{description}}
                             {{/each}}
@@ -37,7 +37,7 @@
                 <div class="col-lg-4">
                     <div class="form-group">
                         <label>Status</label> 
-                        <select name="status" class="form-control"{{#if detail}} readonly="readonly"{{/if}}>
+                        <select name="status" class="form-control" disabled="disabled">
                             <option value="1">Stopped</option>
                             <option value="2">Working</option>
                             <option value="3">Paused</option>
@@ -48,7 +48,7 @@
                 <div class="col-lg-4">
                     <div class="form-group">
                         <label>Type</label> 
-                        <select name="type" class="form-control"{{#if detail}} readonly="readonly"{{/if}}>
+                        <select name="type" class="form-control"{{#if detail}} disabled="disabled"{{/if}}>
                             <option value="1">New feature</option>
                             <option value="2">Maintenance</option>
                             <option value="3">Bug</option>
@@ -83,6 +83,7 @@
             <div class="form-group">
                 <label>Working Actions</label> 
                 {{#if task.finished}}
+                <i>No actions available for a <strong>finished</strong> task.</i>
                 {{else}}
                     {{#if task.stopped }}
                     <a href="/task/action/{{task._id}}/play" class="btn btn-default">
@@ -118,7 +119,7 @@
                         {{#each task.history}}
                         <tr data-status="{{status}}">
                             <td data-timestamp="{{timestamp}}"></td>
-                            <td>{{status}}</td>
+                            <td>{{action-description}}</td>
                             <td></td>
                         </tr>
                         {{/each}}

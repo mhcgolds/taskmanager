@@ -68,3 +68,34 @@
     </div>
     {{/each}}
 </div>
+
+<div class="row">
+    {{#each finishedTasks}}
+    <div class="col-lg-3 col-md-6">
+        <div class="panel panel-{{status-class}}">
+            <div class="panel-heading">
+                <div class="row">
+                    <div class="col-xs-3">
+                        <i class="fa fa-{{status-icon}} fa-5x"></i>
+                    </div>
+                    <div class="col-xs-9 text-right">
+                        <div class="huge">{{code}}</div>
+                        <div>{{description}}</div>
+                        <div>Estimated time: <span id="remaining-time">{{esthours}}:{{estminutes}}</span></div>
+                    </div>
+                </div>
+            </div>
+            <a href="/task/details/{{_id}}">
+                <div class="panel-footer">
+                    <span class="pull-left">
+                        <i class="fa fa-{{type-icon}}"></i>
+                        View Details
+                    </span>
+                    <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+                    <div class="clearfix"></div>
+                </div>
+            </a>
+        </div>
+    </div>
+    {{/each}}
+</div>

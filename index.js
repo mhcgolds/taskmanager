@@ -43,6 +43,7 @@ app.get('/', function (req, res) {
 
   var currentProject = getDefaultProject(req),
       docs = [],
+      finishedTasks = [],
       activeTask = null;
 
   if (currentProject) {
@@ -69,6 +70,7 @@ app.get('/', function (req, res) {
           case 4: 
             status = "green";
             icon = "check-circle"; 
+            finishedTasks.push(doc);
             break;
         }
 
@@ -85,8 +87,10 @@ app.get('/', function (req, res) {
       });
 
       docs = docs.filter(function(doc) {
-        return doc.status != "2";
+        return doc.status != "2" && doc.status != "4";
       });
+
+      console.log(docs);
 
       if (activeTask) {
         var totalTime = 0,
@@ -119,11 +123,11 @@ app.get('/', function (req, res) {
 
         req.session.watching = true;
         startWatch(activeTask["project-id"], function() {
-          res.render('home', getDefaultViewData({ title: "Teste", tasks: docs, msg: getSessionMsg(req), activeTask: activeTask }, req));  
+          res.render('home', getDefaultViewData({ title: "Teste", tasks: docs, msg: getSessionMsg(req), activeTask: activeTask, finishedTasks: finishedTasks }, req));  
         });
       }
       else {
-        res.render('home', getDefaultViewData({ title: "Teste", tasks: docs, msg: getSessionMsg(req), activeTask: activeTask }, req));
+        res.render('home', getDefaultViewData({ title: "Teste", tasks: docs, msg: getSessionMsg(req), activeTask: activeTask, finishedTasks: finishedTasks }, req));
       }
     });
   }
@@ -154,11 +158,26 @@ app.get('/task/details/:id', function (req, res) {
       task.history = task.history.sort(function(a, b) {
         return a.time.getTime() < b.time.getTime();
       });
-    }
 
-    task.history.forEach(function(item) {
-      item.timestamp = item.time.getTime();
-    });
+      task.history.forEach(function(item) {
+        item.timestamp = item.time.getTime();
+
+        switch (Number(item.status)) {
+          case 1: 
+            item["action-description"] =  "Stopped";
+            break;
+          case 2: 
+            item["action-description"] =  "Playing";
+            break;
+          case 3: 
+            item["action-description"] =  "Paused";
+            break;
+          case 4: 
+            item["action-description"] =  "Finished";
+            break;
+        }
+      });
+    }
 
     if (req.session.watching) {
       db.projects.find({ _id: task["project-id"] }, function(err, project) {
@@ -279,6 +298,7 @@ app.get('/current-files', function(req, res) {
 app.post('/task/save', function (req, res) {
   var task = req.body;
   task.history = [];
+  task.status = 1;
 
   db.tasks.insert(task);
   setSessionMsg(req, "Task Saved", 1);
