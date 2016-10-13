@@ -72,13 +72,19 @@ $(function() {
 
             if ($(this).data("status") != "4") {
                 if ($(this).index() > 1) {
-                    prevTime = moment($(this).prev().find("td:first").data("timestamp"));
+                    var timestamp = $(this).prev().find("td:first").data("timestamp");
+                    
+                    if (typeof (timestamp) == "date") {
+                        timestamp = timestamp.getTime();
+                    }
+
+                    prevTime = moment(timestamp);
                 }
                 else {
                     prevTime = moment();
                 }
 
-                var $last = $(this).find("td:last"),
+                var $last = $(this).prev().find("td:last"),
                     minutes = Math.abs(time.diff(prevTime, 'minutes')),
                     label = minutes + " mins";
 
@@ -89,7 +95,9 @@ $(function() {
                     label = hours + " hrs " + minutes + " mins";
                 }
 
-                $last.text(label);
+                if (!isNaN(minutes)) {
+                    $last.text(label);
+                }
             }
         });
     }

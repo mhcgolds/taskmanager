@@ -7,7 +7,8 @@ var express = require('express'),
     git = require("nodegit"),
     repository = null,
     Datastore = require('nedb'),
-    db = {};
+    db = {},
+    moment = require('moment');
   
 db.tasks = new Datastore({ filename: __dirname + "/db/tasks.json", autoload: true });
 db.projects = new Datastore({ filename: __dirname + "/db/projects.json", autoload: true });
@@ -147,6 +148,8 @@ app.get('/task/details/:id', function (req, res) {
     task.stopped = false;
     task.playing = false;
 
+    taskTotalTime(task);
+
     if (task.status == "1" || task.status == "3") task.stopped = true;
     else if (task.status == "2") task.playing = true;
     else if (task.status == "4") task.finished = true;
@@ -167,7 +170,7 @@ app.get('/task/details/:id', function (req, res) {
             item["action-description"] =  "Stopped";
             break;
           case 2: 
-            item["action-description"] =  "Playing";
+            item["action-description"] =  "Working";
             break;
           case 3: 
             item["action-description"] =  "Paused";
@@ -299,6 +302,7 @@ app.post('/task/save', function (req, res) {
   var task = req.body;
   task.history = [];
   task.status = 1;
+  task.create = (new Date());
 
   db.tasks.insert(task);
   setSessionMsg(req, "Task Saved", 1);
@@ -388,3 +392,42 @@ var startWatch = function(projectId, callback) {
     });
   });
 }
+
+var taskTotalTime = function(task) {
+  var history = task.history.sort(function(a, b) {
+        return a.time.getTime() > b.time.getTime();
+      }),
+      prevTime = null,
+      totalMinutes = 0;
+
+  history.forEach(function(h, index) {
+    var time = moment(h.time.getTime());
+
+    if (index > 0) {
+      prevTime = moment(history[index - 1].time.getTime());
+
+      totalMinutes+= Math.abs(time.diff(prevTime, 'minutes'));
+    }
+  });
+  
+  if (totalMinutes > 59) {
+    task["end-time-hours"] = lpad(Math.floor(totalMinutes / 60));
+    task["end-time-minutes"] = lpad(Math.floor(totalMinutes % 60));
+  }
+  else {
+    task["end-time-hours"] = lpad(0);
+    task["end-time-minutes"] = lpad(totalMinutes);
+  }
+};
+
+var lpad = function(value, places) {
+  var str = "", 
+      i = places;
+  
+  while (i > 0) { 
+    str+= "0"; 
+    i-=1; 
+  }; 
+
+  return (str + value.toString()).slice(-places); 
+};
