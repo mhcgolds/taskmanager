@@ -29,8 +29,12 @@ app.use(session({
 
 app.use("/theme", express.static('./theme/'));
 app.use("/css", express.static('./assets/css/'));
+app.use("/css", express.static('./node_modules/select2/dist/css'));
 app.use("/js", express.static('./node_modules/moment/min/'));
+app.use("/js", express.static('./node_modules/select2/dist/js'));
 app.use("/js", express.static('./assets/js/'));
+
+var activeTaskId = null;
 
 app.get('/', function (req, res) {
   if (!req.session.projects) {
@@ -54,6 +58,8 @@ app.get('/', function (req, res) {
             icon = "",
             typeIcon = "";
 
+          doc.estminutes = lpad(doc.estminutes, 2);
+
         switch (Number(doc.status)) {
           case 1: 
             status = "primary"; 
@@ -63,6 +69,7 @@ app.get('/', function (req, res) {
             status = "green";
             icon = "play-circle"; 
             activeTask = doc;
+            activeTaskId = doc._id;
             break;
           case 3: 
             status = "yellow";
@@ -71,6 +78,7 @@ app.get('/', function (req, res) {
           case 4: 
             status = "green";
             icon = "check-circle"; 
+            taskTotalTime(doc);
             finishedTasks.push(doc);
             break;
         }
@@ -90,8 +98,6 @@ app.get('/', function (req, res) {
       docs = docs.filter(function(doc) {
         return doc.status != "2" && doc.status != "4";
       });
-
-      console.log(docs);
 
       if (activeTask) {
         var totalTime = 0,
@@ -138,7 +144,10 @@ app.get('/', function (req, res) {
 });
 
 app.get('/task/add', function (req, res) {
-  res.render('task-form', getDefaultViewData({ title: "Add Task", task: { id: 0 }, detail: false }, req));
+  var date = new Date(),
+      deadline = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
+
+  res.render('task-form', getDefaultViewData({ title: "Add Task", task: { id: 0, deadline: deadline }, detail: false }, req));
 });
 
 app.get('/task/details/:id', function (req, res) {
@@ -149,6 +158,8 @@ app.get('/task/details/:id', function (req, res) {
     task.playing = false;
 
     taskTotalTime(task);
+
+    task["create-timestamp"] = task.create.getTime();
 
     if (task.status == "1" || task.status == "3") task.stopped = true;
     else if (task.status == "2") task.playing = true;
@@ -182,13 +193,16 @@ app.get('/task/details/:id', function (req, res) {
       });
     }
 
+    var edit = (!task.finished),
+        detail = (task.finished);
+
     if (req.session.watching) {
       db.projects.find({ _id: task["project-id"] }, function(err, project) {
-        res.render('task-form', getDefaultViewData({ title: "Task Details", task: task, detail: true, watching: project[0].location }, req));
+        res.render('task-form', getDefaultViewData({ title: "Task Details", task: task, edit: edit, detail: detail, watching: project[0].location, canStart: (activeTaskId == null) }, req));
       });
     }
     else {
-      res.render('task-form', getDefaultViewData({ title: "Task Details", task: task, detail: true, watching: false }, req));
+      res.render('task-form', getDefaultViewData({ title: "Task Details", task: task, edit: edit, detail: detail, watching: false, canStart: (activeTaskId == null) }, req));
     }
   });
 });
@@ -202,15 +216,17 @@ app.get('/task/action/:id/:action', function (req, res) {
 
     var msg = "Task " + doc.code + " is now ";
 
-    if (action == "play" && ["1", "3"].indexOf(doc.status) > -1) {
+    if (action == "play" && ["1", "3", 1, 3].indexOf(doc.status) > -1) {
       doc.status = "2";
       msg+= "started";
       req.session.watching = true;
+      activeTaskId = doc._id;
     }
     else if ((action == "stop" || action == "pause") && doc.status == "2") {
       doc.status = (action == "stop" ? "1" : "3");
       msg+= (action == "stop" ? "stopped" : "paused");
       req.session.watching = false;
+      activeTaskId = null;
     }
     else if (action == "finish" && doc.status != "4") {
       if (doc.statue == "2") {
@@ -219,6 +235,7 @@ app.get('/task/action/:id/:action', function (req, res) {
 
       doc.status = "4";
       msg+= "finished";
+      activeTaskId = null;
     }
     else {
       msg = "Invalid action on task " + doc.code;
@@ -298,15 +315,25 @@ app.get('/current-files', function(req, res) {
   });
 });
 
-app.post('/task/save', function (req, res) {
+app.post('/task/save/:id?', function (req, res) {
   var task = req.body;
-  task.history = [];
-  task.status = 1;
-  task.create = (new Date());
 
-  db.tasks.insert(task);
-  setSessionMsg(req, "Task Saved", 1);
-  res.redirect("/");
+  if (!req.params.id) {
+    task.history = [];
+    task.status = 1;
+    task.create = (new Date());
+
+    db.tasks.insert(task, function() {
+      setSessionMsg(req, "Task Saved", 1);
+      res.redirect("/");
+    });
+  }
+  else {
+    db.tasks.update({ _id: req.params.id }, { $set: task }, function() {
+      setSessionMsg(req, "Task Updated", 1);
+      res.redirect("/");
+    });
+  }
 });
 
 app.post('/project/save/:id?', function (req, res) {

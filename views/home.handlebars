@@ -18,7 +18,7 @@
                     </div>
                     <div class="col-xs-9 text-right">
                         <div class="huge">{{activeTask.code}}</div>
-                        <div>{{activeTask.description}}</div>
+                        <div>{{activeTask.title}}</div>
                         <div>Remaining time: <span id="remaining-time">{{activeTask.esthours}}:{{activeTask.estminutes}}</span></div>
                     </div>
                 </div>
@@ -49,8 +49,8 @@
                     </div>
                     <div class="col-xs-9 text-right">
                         <div class="huge">{{code}}</div>
-                        <div>{{description}}</div>
-                        <div>Estimated time: <span id="remaining-time">{{esthours}}:{{estminutes}}</span></div>
+                        <div>{{title}}</div>
+                        <div>Estimated time: {{esthours}}:{{estminutes}}</div>
                     </div>
                 </div>
             </div>
@@ -80,8 +80,8 @@
                     </div>
                     <div class="col-xs-9 text-right">
                         <div class="huge">{{code}}</div>
-                        <div>{{description}}</div>
-                        <div>Estimated time: <span id="remaining-time">{{esthours}}:{{estminutes}}</span></div>
+                        <div>{{title}}</div>
+                        <div>Conclusion time: {{end-time-hours}}:{{end-time-minutes}}</div>
                     </div>
                 </div>
             </div>

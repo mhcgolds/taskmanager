@@ -70,7 +70,7 @@ $(function() {
 
             $first.text(time.format('DD/MM/YYYY HH:mm:ss'));
 
-            if ($(this).data("status") != "4") {
+            if (["0", "4"].indexOf($(this).data("status").toString()) == -1) {
                 if ($(this).index() > 1) {
                     var timestamp = $(this).prev().find("td:first").data("timestamp");
                     
@@ -101,6 +101,11 @@ $(function() {
             }
         });
     }
+
+    $("#tags").select2({
+        tags: true,
+        tokenSeparators: [',', ' ']
+    });
 
     $('body')
         .on('click', '.repo-action-commit', function() { // Task Commit Action
