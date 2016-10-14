@@ -89,8 +89,8 @@ $(function() {
                     label = minutes + " mins";
 
                 if (minutes > 59) {
-                    var hours = Math.floor(minutes % 60),
-                        minutes = Math.floor(minutes / 60);
+                    var hours = Math.floor(minutes / 60),
+                        minutes = Math.floor(minutes % 60);
 
                     label = hours + " hrs " + minutes + " mins";
                 }
@@ -102,15 +102,12 @@ $(function() {
         });
     }
 
-    $("#tags").select2({
-        tags: true,
-        tokenSeparators: [',', ' ']
-    });
-
     $('body')
         .on('click', '.repo-action-commit', function() { // Task Commit Action
             $("#commit-message").toggle().find("textarea").val("#" + $('[name="code"]').val() + " ").focus();
         })
         .on('click', '.repo-action-commit-send', function() { // Task Commit Send Action
         });
+
+    $('.alert').delay(3000).fadeOut(1000);
 });

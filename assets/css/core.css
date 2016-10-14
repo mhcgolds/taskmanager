@@ -1,5 +1,5 @@
 #file-list li.new {
-    color: #A3C856;
+    color: #5cb85c;
 }
 
 #file-list li.modified {
@@ -27,4 +27,16 @@
 
 #commit-message {
     display: none
+}
+
+.priority-high {
+    color: #A80022
+}
+
+.priority-med {
+    color: #DCC039
+}
+
+.priority-low {
+    color: #5cb85c
 }

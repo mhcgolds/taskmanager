@@ -27,6 +27,7 @@
                 <div class="panel-footer">
                     <span class="pull-left">
                         <i class="fa fa-{{activeTask.type-icon}}"></i>
+                        <i class="fa fa-{{#if activeTask.priority-high}}circle priority-high{{/if}}{{#if activeTask.priority-med}}dot-circle-o priority-med{{/if}}{{#if activeTask.priority-low}}circle-o priority-low{{/if}}"></i>
                         View Details
                     </span>
                     <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
@@ -63,6 +64,7 @@
                 <div class="panel-footer">
                     <span class="pull-left">
                         <i class="fa fa-{{type-icon}}"></i>
+                        <i class="fa fa-{{#if priority-high}}circle priority-high{{/if}}{{#if priority-med}}dot-circle-o priority-med{{/if}}{{#if priority-low}}circle-o priority-low{{/if}}"></i>
                         View Details
                     </span>
                     <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
@@ -99,6 +101,7 @@
                 <div class="panel-footer">
                     <span class="pull-left">
                         <i class="fa fa-{{type-icon}}"></i>
+                        <i class="fa fa-{{#if priority-high}}circle priority-high{{/if}}{{#if priority-med}}dot-circle-o priority-med{{/if}}{{#if priority-low}}circle-o priority-low{{/if}}"></i>
                         View Details
                     </span>
                     <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>

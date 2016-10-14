@@ -29,9 +29,10 @@ app.use(session({
 
 app.use("/theme", express.static('./theme/'));
 app.use("/css", express.static('./assets/css/'));
-app.use("/css", express.static('./node_modules/select2/dist/css'));
+app.use("/css", express.static('./node_modules/selectize/dist/css'));
 app.use("/js", express.static('./node_modules/moment/min/'));
-app.use("/js", express.static('./node_modules/select2/dist/js'));
+app.use("/js", express.static('./node_modules/selectize/dist/js'));
+app.use("/js", express.static('./node_modules/microplugin/src/'));
 app.use("/js", express.static('./assets/js/'));
 
 var activeTaskId = null;
@@ -52,7 +53,7 @@ app.get('/', function (req, res) {
       activeTask = null;
 
   if (currentProject) {
-    db.tasks.find({ "project-id": currentProject._id }).exec(function(err, docs) {
+    db.tasks.find({ "project-id": currentProject._id }).sort({ priority: 1 }).exec(function(err, docs) {
       docs.forEach(function(doc) {
         var status = "",
             icon = "",
@@ -85,11 +86,20 @@ app.get('/', function (req, res) {
 
         doc["status-class"] = status;
         doc["status-icon"] = icon;
+        doc["priority-high"] = false;
+        doc["priority-med"] = false;
+        doc["priority-low"] = false;
 
         switch (Number(doc.type)) {
           case 1: typeIcon = "asterisk"; break;
           case 2: typeIcon = "wrench"; break;
           case 3: typeIcon = "bug"; break;
+        }
+
+        switch (Number(doc.priority)) {
+          case 1: doc["priority-high"] = true; break;
+          case 2: doc["priority-med"] = true; break;
+          case 3: doc["priority-low"] = true; break;
         }
 
         doc["type-icon"] = typeIcon;
@@ -156,6 +166,29 @@ app.get('/task/details/:id', function (req, res) {
     task.finished = false;
     task.stopped = false;
     task.playing = false;
+    task["new-feature"] = false;
+    task.maintenance = false;
+    task.bug = false;
+    task["priority-high"] = false;
+    task["priority-med"] = false;
+    task["priority-low"] = false;
+
+    var titleIcon = "";
+
+    switch (Number(task.type)) {
+      case 1: 
+        task["new-feature"] = true; 
+        titleIcon = "asterisk";
+        break;
+      case 2: 
+        task.maintenance = true; 
+        titleIcon = "wrench";
+        break;
+      case 3: 
+        task.bug = true; 
+        titleIcon = "bug";
+        break;
+    }
 
     taskTotalTime(task);
 
@@ -198,11 +231,11 @@ app.get('/task/details/:id', function (req, res) {
 
     if (req.session.watching) {
       db.projects.find({ _id: task["project-id"] }, function(err, project) {
-        res.render('task-form', getDefaultViewData({ title: "Task Details", task: task, edit: edit, detail: detail, watching: project[0].location, canStart: (activeTaskId == null) }, req));
+        res.render('task-form', getDefaultViewData({ title: "Task Details", titleIcon: titleIcon, task: task, edit: edit, detail: detail, watching: project[0].location, canStart: (activeTaskId == null) }, req));
       });
     }
     else {
-      res.render('task-form', getDefaultViewData({ title: "Task Details", task: task, edit: edit, detail: detail, watching: false, canStart: (activeTaskId == null) }, req));
+      res.render('task-form', getDefaultViewData({ title: "Task Details", titleIcon: titleIcon, task: task, edit: edit, detail: detail, watching: false, canStart: (activeTaskId == null) }, req));
     }
   });
 });
@@ -354,14 +387,21 @@ app.post('/project/save/:id?', function (req, res) {
   project.default = false;
 
   if (!req.params.id) {
-    db.projects.insert(project);
+    db.projects.insert(project, function() {
+      updateProjectsSession(req, function() {
+        setSessionMsg(req, "Project Created", 1);
+        res.redirect("/");
+      });
+    });
   }
   else {
-    db.projects.update({ _id: req.params.id }, { $set: project });
+    db.projects.update({ _id: req.params.id }, { $set: project }, {}, function() {
+      updateProjectsSession(req, function() {
+        setSessionMsg(req, "Project Updated", 1);
+        res.redirect("/");
+      });
+    });
   }
-
-  setSessionMsg(req, "Project Updated", 1);
-  res.redirect("/");
 });
 
 app.listen(3000, function () {
@@ -471,4 +511,11 @@ var lpad = function(value, places) {
   }; 
 
   return (str + value.toString()).slice(-places); 
+};
+
+var updateProjectsSession = function(req, callback) {
+  db.projects.find({}, function(err, projects) {
+      req.session.projects = projects;
+      callback();
+  });
 };
