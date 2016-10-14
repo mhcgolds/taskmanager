@@ -93,7 +93,7 @@
                 </div>
             </div>
 
-            {{#if detail}}
+            {{#if edit}}
 
             <div class="form-group">
                 <label>Working Actions</label> 
@@ -154,9 +154,14 @@
 
             <div class="form-group">
                 <a href="/" class="btn">Cancel</a>
-                {{#if detail}}
+                {{#if edit}}
                 {{else}}
                 <input type="submit" class="btn btn-primary" value="Save">
+                {{/if}}
+            </div>
+            <div class="form-group">
+                {{#if task._id}}
+                <a href="/task/delete/{{task._id}}" class="btn text-danger">Delete</a>
                 {{/if}}
             </div>
         </form>

@@ -130,16 +130,16 @@ app.get('/', function (req, res) {
 
         req.session.watching = true;
         startWatch(activeTask["project-id"], function() {
-          res.render('home', getDefaultViewData({ title: "Teste", tasks: docs, msg: getSessionMsg(req), activeTask: activeTask, finishedTasks: finishedTasks }, req));  
+          res.render('home', getDefaultViewData({ title: "Dashboard", tasks: docs, tasksCount: docs.length, msg: getSessionMsg(req), activeTask: activeTask, finishedTasks: finishedTasks, finishedTasksCount: finishedTasks.length }, req));  
         });
       }
       else {
-        res.render('home', getDefaultViewData({ title: "Teste", tasks: docs, msg: getSessionMsg(req), activeTask: activeTask, finishedTasks: finishedTasks }, req));
+        res.render('home', getDefaultViewData({ title: "Dashboard", tasks: docs, tasksCount: docs.length, msg: getSessionMsg(req), activeTask: activeTask, finishedTasks: finishedTasks, finishedTasksCount: finishedTasks.length }, req));
       }
     });
   }
   else {
-    res.render('home', getDefaultViewData({ title: "Teste", tasks: [], msg: getSessionMsg(req), activeTask: null }, req));
+    res.render('home', getDefaultViewData({ title: "Dashboard", tasks: [], tasksCount: 0, msg: getSessionMsg(req), activeTask: null, finishedTasks: [], finishedTasksCount: 0 }, req));
   }
 });
 
@@ -315,6 +315,19 @@ app.get('/current-files', function(req, res) {
   });
 });
 
+app.get('/task/delete/:id', function(req, res) {
+  db.tasks.find({ _id: req.params.id }, function(err, task) {
+    res.render('task-delete', getDefaultViewData({task: task[0], history: (task[0].history && task[0].history.length > 0) }, req));
+  });
+});
+
+app.post('/task/delete/:id', function(req, res) {
+  db.tasks.remove({ _id: req.params.id }, {}, function() {
+    setSessionMsg(req, "Task removed", 1);
+    res.redirect('/');
+  });
+});
+
 app.post('/task/save/:id?', function (req, res) {
   var task = req.body;
 
@@ -416,6 +429,7 @@ var startWatch = function(projectId, callback) {
       callback();
     }, function(error) {
       console.log("Repository error", project.location, error);
+      callback();
     });
   });
 }

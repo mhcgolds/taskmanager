@@ -39,6 +39,11 @@
 </div>
 
 <div class="row">
+    <div class="col-lg-3 col-md-6">
+        Tasks: {{tasksCount}}
+    </div>
+</div>
+<div class="row">
     {{#each tasks}}
     <div class="col-lg-3 col-md-6">
         <div class="panel panel-{{status-class}}">
@@ -69,6 +74,11 @@
     {{/each}}
 </div>
 
+<div class="row">
+    <div class="col-lg-3 col-md-6">
+        Finished tasks: {{finishedTasksCount}}
+    </div>
+</div>
 <div class="row">
     {{#each finishedTasks}}
     <div class="col-lg-3 col-md-6">
